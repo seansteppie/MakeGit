@@ -57,7 +57,7 @@ function dl_page() {
     # If the download was successful but have a zero sized file, it actually failed.
     if [ $status -eq 0 -a ! -s $githtml ]; then
         status=1
-    else if ! trim_linefeeds $gitmtml, $githtml
+    elif ! trim_linefeeds $gitmtml, $githtml
     then
         status=1
     fi
