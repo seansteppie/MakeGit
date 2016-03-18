@@ -11,9 +11,9 @@ declare -r tagprefix=v                               # Tag prefix. Git tags are:
                                                      #   v$VERSION eg v2.7.2
 declare -r progname=$(basename $0)                   # Name of this script
 declare -r giturl="http://git-scm.com/"              # URL of git page
-declare -r githtml=/tmp/$progname\_$$.html             # tmp file to store git page HTML
-declare -r gitversionclass='span[class=version]'     # HTML selector to find the version
-declare -r gitdateclass='span[class="release-date"]' # HTML selector to find release date
+declare -r githtml=/tmp/$progname\_$$.html           # tmp file to store git page HTML
+declare -r gitversionclass='class="version"'         # HTML selector to find the version
+declare -r gitdateclass='class="release-date"'       # HTML selector to find release date
 declare -r remotename=origin                         # Name of the git repository. Can be
                                                      # a URL: https://github.com/git/git.git
 declare -r pup=/usr/share/gocode/bin/pup             # pup - used to parse HTML
@@ -57,8 +57,18 @@ function dl_page() {
     # If the download was successful but have a zero sized file, it actually failed.
     if [ $status -eq 0 -a ! -s $githtml ]; then
         status=1
+    else if ! trim_linefeeds $gitmtml, $githtml
+    then
+        status=1
     fi
     return $status
+}
+
+function trim_linefeeds() {
+    src=$1
+    dst=$2
+    tr -d '\r\n' < $src > $dst
+    return $?
 }
 
 function parse_html() {
@@ -76,7 +86,7 @@ function parse_html() {
 }
 
 function get_current_verison() {
-    if vershtml=$(parse_html $gitversionclass $githtml 2>> $logfile)
+    if vershtml=$(grep $gitversionclass $githtml 2>> $logfile)
     then
         echo $(echo $vershtml | sed 's/^.*\([0-9]\+\.[0-9]\+\(.[0-9]\+\)\).*$/\1/');
 #        echo $vershtml
