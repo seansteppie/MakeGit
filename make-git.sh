@@ -70,20 +70,6 @@ function trim_linefeeds() {
     return $?
 }
 
-function parse_html() {
-    selector=$1
-    html=$2
-    if [ -z $html ]; then
-        return 1
-    fi
-    retVal=$($pup $selector < $html 2>> $logfile)
-    if [ ! -z "$retVal" ]; then
-        echo $retVal
-        return 0
-    fi
-    return 1
-}
-
 function get_current_verison() {
     if sed "s/^.*$gitversionclass> \+\([0-9]\+\.[0-9]\+\(.[0-9]\+\)\).*$/\1/" $githtml;
     then
