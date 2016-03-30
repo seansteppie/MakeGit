@@ -11,13 +11,12 @@ declare -r tagprefix=v                               # Tag prefix. Git tags are:
                                                      #   v$VERSION eg v2.7.2
 declare -r progname=$(basename $0)                   # Name of this script
 declare -r giturl="http://git-scm.com/"              # URL of git page
-declare -r githtml=/tmp/$progname\_$$.html           # tmp file to store git page HTML
+declare -r githtml="/tmp/$progname_$$.html"          # tmp file to store git page HTML
+declare -r githtmlcp="/tmp/$progname_cp_$$.html"     # copy of tmp file to store git page HTML
 declare -r gitversionclass='class="version"'         # HTML selector to find the version
-declare -r gitdateclass='class="release-date"'       # HTML selector to find release date
 declare -r remotename=origin                         # Name of the git repository. Can be
                                                      # a URL: https://github.com/git/git.git
-declare -r pup=/usr/share/gocode/bin/pup             # pup - used to parse HTML
-declare -r logfile=/tmp/$progname\_$$.log            # Where we log to
+declare -r logfile="/tmp/$progname\_$$.log"          # Where we log to
 declare installed_version=""                         # Which version is currently installed
 
 touch $logfile
@@ -57,7 +56,7 @@ function dl_page() {
     # If the download was successful but have a zero sized file, it actually failed.
     if [ $status -eq 0 -a ! -s $githtml ]; then
         status=1
-    elif ! trim_linefeeds $gitmtml, $githtml
+    elif ! trim_linefeeds $githtml $githtmlcp
     then
         status=1
     fi
@@ -86,19 +85,8 @@ function parse_html() {
 }
 
 function get_current_verison() {
-    if vershtml=$(grep $gitversionclass $githtml 2>> $logfile)
+    if sed "s/^.*$gitversionclass> \+\([0-9]\+\.[0-9]\+\(.[0-9]\+\)\).*$/\1/" $githtml;
     then
-        echo $(echo $vershtml | sed 's/^.*\([0-9]\+\.[0-9]\+\(.[0-9]\+\)\).*$/\1/');
-#        echo $vershtml
-        return 0
-    fi
-    return 1
-}
-
-function get_current_date() {
-    if datehtml=$(parse_html $gitdateclass $githtml 2>> $logfile)
-    then
-        echo $(echo $datehtml | sed 's/^.*\([0-9][0-9][0-9][0-9]-[01][0-9]-[0123][0-9]\).*$/\1/')
         return 0
     fi
     return 1
@@ -112,7 +100,8 @@ function get_current_date() {
 # Sets:
 #     $version  - Version of Git found on the page
 function get_dl_version() {
-    version=$($pup $gitclass < $githtml | grep "[0-9.]\+" | sed 's/ //g')
+    version="$($pup $gitclass < $githtml | grep "[0-9.]\+" | sed 's/ //g')"
+    echo $version
     return $(valid_version $version)
 }
 
@@ -145,7 +134,7 @@ function get_git() {
     tag=$1
     cd $source
     $git checkout master >> $logfile 2>&1
-    if $git pull $remotename master >> $logfile 2>&1; then
+    if $git pull >> $logfile 2>&1; then
         $git checkout $tag >> $logfile 2>&1
     fi
     return $?
@@ -174,11 +163,12 @@ function err_msg() {
 # If a version wasn't passed need to download git front page to get current
 # version number
 if [ -z "$get_version" ]; then
-    if ! dl_page
-    then
-        err_msg "Failed to download Git front page: $githtml"
-        exit 1
-    fi
+#    if ! dl_page
+#    then
+#        err_msg "Failed to download Git front page: $githtml"
+#        exit 1
+#    fi
+    cp $githtmlcp $githtml
     if current=$(get_current_verison)
     then
         version=$current
@@ -197,7 +187,7 @@ fi
 
 if [ $(installed_version) = $version ]; then
     echo "Installed version is up to date ( $version )."
-    #exit
+    exit
 fi
 old_version=$installed_version
 tag=$tagprefix$version
@@ -211,7 +201,7 @@ fi
 # Get the latest changes
 if ! get_git $tag
 then
-    err_msg "Failed to pull from git repo"
+    err_msg "Failed to get Git repo"
     exit 1
 fi
 
