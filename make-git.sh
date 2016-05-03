@@ -9,14 +9,14 @@ declare -r source=/opt/git                           # Where the git sources are
 declare -r dest=/usr/local                           # Where to install the binaries
 declare -r tagprefix=v                               # Tag prefix. Git tags are:
                                                      #   v$VERSION eg v2.7.2
-declare -r progname=$(basename $0)                   # Name of this script
-declare -r giturl="http://git-scm.com/"              # URL of git page
-declare -r githtml="/tmp/$progname_$$.html"          # tmp file to store git page HTML
-declare -r githtmlcp="/tmp/$progname_cp_$$.html"     # copy of tmp file to store git page HTML
+declare -r progname=$(basename $0 | sed 's/\.sh$//') # Name of this script
+declare -r giturl="https://git-scm.com/"             # URL of git page
+declare -r githtml="/tmp/$progname$$.html"          # tmp file to store git page HTML
+declare -r cpgithtml="/tmp/cp$progname$$.html"     # copy of tmp file to store git page HTML
 declare -r gitversionclass='class="version"'         # HTML selector to find the version
 declare -r remotename=origin                         # Name of the git repository. Can be
                                                      # a URL: https://github.com/git/git.git
-declare -r logfile="/tmp/$progname\_$$.log"          # Where we log to
+declare -r logfile="/tmp/$progname_$$.log"           # Where we log to
 declare installed_version=""                         # Which version is currently installed
 
 touch $logfile
@@ -53,10 +53,10 @@ function valid_version() {
 function dl_page() {
     wget --quiet -O $githtml $giturl >> $logfile 2>&1
     status=$?
-    # If the download was successful but have a zero sized file, it actually failed.
-    if [ $status -eq 0 -a ! -s $githtml ]; then
+    # If the download was successful but has a zero sized file, it actually failed.
+    if [ ${status} -eq 0 -a ! -s $githtml ]; then
         status=1
-    elif ! trim_linefeeds $githtml $githtmlcp
+    elif ! trim_linefeeds $githtml $cpgithtml
     then
         status=1
     fi
@@ -148,18 +148,19 @@ function err_msg() {
 
 # If a version wasn't passed need to download git front page to get current
 # version number
+echo $githtml $cpgithtml
 if [ -z "$get_version" ]; then
-#    if ! dl_page
-#    then
-#        err_msg "Failed to download Git front page: $githtml"
-#        exit 1
-#    fi
-    cp $githtmlcp $githtml
+    if ! dl_page
+    then
+        err_msg "Failed to download Git front page: $githtml"
+        exit 1
+    fi
+    cp $cpgithtml $githtml
     if current=$(get_current_verison)
     then
         version=$current
     fi
-    date=$(get_current_date)
+    #date=$(get_current_date)
 else
     version=$get_version
 fi
@@ -170,8 +171,8 @@ then
     err_msg "Invalid version number: $version"
     exit 1
 fi
-
-if [ $(installed_version) = $version ]; then
+installed_version=$(installed_version)
+if [ $installed_version = $version ]; then
     echo "Installed version is up to date ( $version )."
     exit
 fi
@@ -194,7 +195,7 @@ fi
 # Make it
 if make_git
 then
-    echo "Updated git from $old_version to $version $date"
+    echo "Updated git from $old_version to $version" # $date"
 else
     err_msg "Git update: FAILED (see $logfile)"
     exit 1
