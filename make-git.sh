@@ -1,6 +1,7 @@
 #!/bin/bash
 
-declare -r git="sudo git"                            # Command used to run git.
+declare -r gitbin=/usr/local/bin/git                 # Location of the git binary
+declare -r git="sudo $gitbin"                        # Command used to run git.
                                                      # (sudo is only required if you don't
                                                      # have permissions to write to $source)
 declare -r make="sudo make"                          # Command used to run make. Same
@@ -11,8 +12,8 @@ declare -r tagprefix=v                               # Tag prefix. Git tags are:
                                                      #   v$VERSION eg v2.7.2
 declare -r progname=$(basename $0 | sed 's/\.sh$//') # Name of this script
 declare -r giturl="https://git-scm.com/"             # URL of git page
-declare -r githtml="/tmp/$progname$$.html"          # tmp file to store git page HTML
-declare -r cpgithtml="/tmp/cp$progname$$.html"     # copy of tmp file to store git page HTML
+declare -r githtml="/tmp/$progname$$.html"           # tmp file to store git page HTML
+declare -r cpgithtml="/tmp/cp$progname$$.html"       # copy of tmp file to store git page HTML
 declare -r gitversionclass='class="version"'         # HTML selector to find the version
 declare -r remotename=origin                         # Name of the git repository. Can be
                                                      # a URL: https://github.com/git/git.git
@@ -148,7 +149,7 @@ function err_msg() {
 
 # If a version wasn't passed need to download git front page to get current
 # version number
-echo $githtml $cpgithtml
+
 if [ -z "$get_version" ]; then
     if ! dl_page
     then
