@@ -1,0 +1,16 @@
+
+
+def installDir = "/usr/local/bin"
+def scriptName = "make-git.sh"
+
+task validate(type: Exec) {
+    commandLine 'bash', '-n', scriptName
+}
+
+task install( type: Copy, dependsOn: validate) << {
+println projectDir
+    from( projectDir )
+    into( installDir )
+    include "*.sh"
+}
+
